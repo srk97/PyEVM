@@ -91,8 +91,8 @@ def gaussian_video(video_tensor,levels=3):
 def amplify_video(gaussian_vid,amplification=50):
     return gaussian_vid*amplification
 
-#reconstract video from original video and gaussian video
-def reconstract_video(amp_video,origin_video,levels=3):
+#reconstruct video from original video and gaussian video
+def reconstruct_video(amp_video,origin_video,levels=3):
     final_video=np.zeros(origin_video.shape)
     for i in range(0,amp_video.shape[0]):
         img = amp_video[i]
@@ -118,7 +118,7 @@ def magnify_color(video_name,low,high,levels=3,amplification=20):
     gau_video=gaussian_video(t,levels=levels)
     filtered_tensor=temporal_ideal_filter(gau_video,low,high,f)
     amplified_video=amplify_video(filtered_tensor,amplification=amplification)
-    final=reconstract_video(amplified_video,t,levels=3)
+    final=reconstruct_video(amplified_video,t,levels=3)
     save_video(final, modew='color')
 
 #build laplacian pyramid for video
@@ -144,8 +144,8 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     y = signal.lfilter(b, a, data, axis=0)
     return y
 
-#reconstract video from laplacian pyramid
-def reconstract_from_tensorlist(filter_tensor_list,levels=3):
+#reconstruct video from laplacian pyramid
+def reconstruct_from_tensorlist(filter_tensor_list,levels=3):
     final=np.zeros(filter_tensor_list[-1].shape)
     for i in range(filter_tensor_list[0].shape[0]):
         up = filter_tensor_list[0][i]
@@ -164,7 +164,7 @@ def magnify_motion(video_name,low,high,levels=3,amplification=20):
         filter_tensor=butter_bandpass_filter(lap_video_list[i],low,high,f)
         filter_tensor*=amplification
         filter_tensor_list.append(filter_tensor)
-    recon=reconstract_from_tensorlist(filter_tensor_list)
+    recon=reconstruct_from_tensorlist(filter_tensor_list)
     final=t+recon
     save_video(final)
 
