@@ -39,22 +39,26 @@ def build_laplacian_pyramid(src,levels=3):
     pyramid=[]
     for i in range(levels,0,-1):
         GE=cv2.pyrUp(gaussianPyramid[i])
+        #print(type(GE), type(gaussianPyramid[i-1]))
+        #print(GE.shape, gaussianPyramid[i-1].shape)
         L=cv2.subtract(gaussianPyramid[i-1],GE)
         pyramid.append(L)
     return pyramid
 
 #load video from file
-def load_video(video_filename):
+def load_video(video_filename, levels):
     cap=cv2.VideoCapture(video_filename)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-    video_tensor=np.zeros((frame_count,height,width,3),dtype='float')
+    resized_ht = height - (height%(2**levels))
+    resized_wt = width - (width%(2**levels))
+    video_tensor=np.zeros((frame_count,resized_ht,resized_wt,3),dtype='float')
     x=0
     while cap.isOpened():
         ret,frame=cap.read()
         if ret is True:
-            video_tensor[x]=frame
+            video_tensor[x] = cv2.resize(frame, (resized_wt,resized_ht))
             x+=1
         else:
             break
@@ -99,22 +103,23 @@ def reconstract_video(amp_video,origin_video,levels=3):
     return final_video
 
 #save video to files
-def save_video(video_tensor):
+def save_video(video_tensor, modew='motion'):
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     [height,width]=video_tensor[0].shape[0:2]
-    writer = cv2.VideoWriter("out.avi", fourcc, 30, (width, height), 1)
+    writer = cv2.VideoWriter("out"+modew+'.avi', fourcc, 30, (width, height), 1)
     for i in range(0,video_tensor.shape[0]):
         writer.write(cv2.convertScaleAbs(video_tensor[i]))
     writer.release()
 
 #magnify color
 def magnify_color(video_name,low,high,levels=3,amplification=20):
-    t,f=load_video(video_name)
+    t,f=load_video(video_name, levels)
+    #print(t.shape, f)
     gau_video=gaussian_video(t,levels=levels)
     filtered_tensor=temporal_ideal_filter(gau_video,low,high,f)
     amplified_video=amplify_video(filtered_tensor,amplification=amplification)
     final=reconstract_video(amplified_video,t,levels=3)
-    save_video(final)
+    save_video(final, modew='color')
 
 #build laplacian pyramid for video
 def laplacian_video(video_tensor,levels=3):
@@ -150,7 +155,8 @@ def reconstract_from_tensorlist(filter_tensor_list,levels=3):
 
 #manify motion
 def magnify_motion(video_name,low,high,levels=3,amplification=20):
-    t,f=load_video(video_name)
+    t,f=load_video(video_name, levels)
+    #print(t.shape, f)
     lap_video_list=laplacian_video(t,levels=levels)
     filter_tensor_list=[]
     for i in range(levels):
@@ -162,5 +168,6 @@ def magnify_motion(video_name,low,high,levels=3,amplification=20):
     save_video(final)
 
 if __name__=="__main__":
-    # magnify_color("baby.mp4",0.4,3)
-    magnify_motion("baby.mp4",0.4,3)
+    #magnify_color("test_videos/trial_truth_053.mp4",0.4,3)
+    magnify_motion("test_videos/trial_truth_053.mp4",0.4,3)
+    #magnify_motion("baby.mp4",0.4,3)
