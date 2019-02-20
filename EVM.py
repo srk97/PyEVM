@@ -28,7 +28,7 @@ def ntsc2rbg(src):
 def build_gaussian_pyramid(src,level=3):
     s=src.copy()
     pyramid=[s]
-    for i in range(level):
+    for _ in range(level):
         s=cv2.pyrDown(s)
         pyramid.append(s)
     return pyramid
@@ -96,7 +96,7 @@ def reconstract_video(amp_video,origin_video,levels=3):
     final_video=np.zeros(origin_video.shape)
     for i in range(0,amp_video.shape[0]):
         img = amp_video[i]
-        for x in range(levels):
+        for _ in range(levels):
             img=cv2.pyrUp(img)
         img=img+origin_video[i]
         final_video[i]=img
@@ -135,6 +135,7 @@ def laplacian_video(video_tensor,levels=3):
     return tensor_list
 
 #butterworth bandpass filter
+#Reference: https://stackoverflow.com/a/20935536
 def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     omega = 0.5 * fs
     low = lowcut / omega
