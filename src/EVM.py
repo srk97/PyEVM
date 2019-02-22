@@ -1,8 +1,10 @@
+import argparse
+
 import cv2
 import numpy as np
-import scipy.signal as signal
 import scipy.fftpack as fftpack
-import argparse
+import scipy.signal as signal
+
 from hparams.registry import get_hparams
 
 parser = argparse.ArgumentParser()
@@ -46,8 +48,6 @@ def build_laplacian_pyramid(src,levels=3):
     pyramid=[]
     for i in range(levels,0,-1):
         GE=cv2.pyrUp(gaussianPyramid[i])
-        #print(type(GE), type(gaussianPyramid[i-1]))
-        #print(GE.shape, gaussianPyramid[i-1].shape)
         L=cv2.subtract(gaussianPyramid[i-1],GE)
         pyramid.append(L)
     return pyramid
