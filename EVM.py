@@ -2,7 +2,14 @@ import cv2
 import numpy as np
 import scipy.signal as signal
 import scipy.fftpack as fftpack
+import argparse
+from hparams.registry import get_hparams
 
+parser = argparse.ArgumentParser()
+parser.add_argument("hparams", type=str)
+args = parser.parse_args()
+
+hps = get_hparams(args.hparams)
 
 #convert RBG to YIQ
 def rgb2ntsc(src):
@@ -103,23 +110,24 @@ def reconstruct_video(amp_video,origin_video,levels=3):
     return final_video
 
 #save video to files
-def save_video(video_tensor, modew='motion'):
+def save_video(video_tensor, saved_name, modew='motion'):
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     [height,width]=video_tensor[0].shape[0:2]
-    writer = cv2.VideoWriter("out"+modew+'.avi', fourcc, 30, (width, height), 1)
+    writer = cv2.VideoWriter(saved_name + modew+'.avi', fourcc, 30, (width, height), 1)
     for i in range(0,video_tensor.shape[0]):
         writer.write(cv2.convertScaleAbs(video_tensor[i]))
     writer.release()
 
 #magnify color
-def magnify_color(video_name,low,high,levels=3,amplification=20):
-    t,f=load_video(video_name, levels)
+def magnify_color(video_name):
+    saved_name = video_name.strip('mp4')[:-1] + '_' + args.hparams + '_'
+    t,f=load_video(video_name, hps.levels)
     #print(t.shape, f)
-    gau_video=gaussian_video(t,levels=levels)
-    filtered_tensor=temporal_ideal_filter(gau_video,low,high,f)
-    amplified_video=amplify_video(filtered_tensor,amplification=amplification)
-    final=reconstruct_video(amplified_video,t,levels=3)
-    save_video(final, modew='color')
+    gau_video=gaussian_video(t,levels=hps.levels)
+    filtered_tensor=temporal_ideal_filter(gau_video,hps.cutoff_low,hps.cutoff_high,f)
+    amplified_video=amplify_video(filtered_tensor,amplification=hps.amplification)
+    final=reconstruct_video(amplified_video,t,levels=hps.levels)
+    save_video(final, saved_name, modew='color')
 
 #build laplacian pyramid for video
 def laplacian_video(video_tensor,levels=3):
@@ -150,25 +158,25 @@ def reconstruct_from_tensorlist(filter_tensor_list,levels=3):
     for i in range(filter_tensor_list[0].shape[0]):
         up = filter_tensor_list[0][i]
         for n in range(levels-1):
-            up=cv2.pyrUp(up)+filter_tensor_list[n + 1][i]#可以改为up=cv2.pyrUp(up)
+            up=cv2.pyrUp(up)+filter_tensor_list[n + 1][i]
         final[i]=up
     return final
 
 #manify motion
-def magnify_motion(video_name,low,high,levels=3,amplification=20):
-    t,f=load_video(video_name, levels)
+def magnify_motion(video_name):
+    saved_name = video_name.strip('mp4')[:-1] + '_'+ args.hparams + '_'
+    t,f=load_video(video_name, hps.levels)
     #print(t.shape, f)
-    lap_video_list=laplacian_video(t,levels=levels)
+    lap_video_list=laplacian_video(t,levels=hps.levels)
     filter_tensor_list=[]
-    for i in range(levels):
-        filter_tensor=butter_bandpass_filter(lap_video_list[i],low,high,f)
-        filter_tensor*=amplification
+    for i in range(hps.levels):
+        filter_tensor=butter_bandpass_filter(lap_video_list[i],hps.cutoff_low,hps.cutoff_high,f)
+        filter_tensor*=hps.amplification
         filter_tensor_list.append(filter_tensor)
     recon=reconstruct_from_tensorlist(filter_tensor_list)
     final=t+recon
-    save_video(final)
+    save_video(final, saved_name)
 
 if __name__=="__main__":
-    #magnify_color("test_videos/trial_truth_053.mp4",0.4,3)
-    magnify_motion("test_videos/trial_truth_053.mp4",0.4,3)
-    #magnify_motion("baby.mp4",0.4,3)
+    for fn in hps.mode:
+        locals()[fn]("test_videos/trial_lie_038.mp4")
