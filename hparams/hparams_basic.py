@@ -7,6 +7,7 @@ class HParams():
     self.cutoff_low = 0.83
     self.cutoff_high = 1
     self.mode = None
+    self.save_only_diff = False
 
 @register
 def evm_default():

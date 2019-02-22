@@ -5,12 +5,12 @@ import numpy as np
 import scipy.fftpack as fftpack
 import scipy.signal as signal
 
-from hparams.registry import get_hparams
+from ..hparams.registry import get_hparams
 
 parser = argparse.ArgumentParser()
 parser.add_argument("hparams", type=str)
 args = parser.parse_args()
-
+#global hps
 hps = get_hparams(args.hparams)
 
 #convert RBG to YIQ
@@ -113,14 +113,15 @@ def reconstruct_video(amp_video,origin_video,levels=3):
 def save_video(video_tensor, saved_name, modew='motion'):
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     [height,width]=video_tensor[0].shape[0:2]
-    writer = cv2.VideoWriter(saved_name + modew+'.avi', fourcc, 30, (width, height), 1)
+    writer = cv2.VideoWriter(saved_name + '_' + modew+'.avi', fourcc, 30, (width, height), 1)
     for i in range(0,video_tensor.shape[0]):
         writer.write(cv2.convertScaleAbs(video_tensor[i]))
     writer.release()
 
 #magnify color
-def magnify_color(video_name):
-    saved_name = video_name.strip('mp4')[:-1] + '_' + args.hparams + '_'
+def magnify_color(video_name, hps, saved_name=None):
+    if saved_name is None:
+        saved_name = video_name.strip('mp4')[:-1]
     t,f=load_video(video_name, hps.levels)
     #print(t.shape, f)
     gau_video=gaussian_video(t,levels=hps.levels)
@@ -163,8 +164,11 @@ def reconstruct_from_tensorlist(filter_tensor_list,levels=3):
     return final
 
 #manify motion
-def magnify_motion(video_name):
-    saved_name = video_name.strip('mp4')[:-1] + '_'+ args.hparams + '_'
+def magnify_motion(video_name, hps, saved_name=None):
+    print(hps.levels)
+    print(video_name)
+    if saved_name is None:
+        saved_name = video_name.strip('mp4')[:-1]
     t,f=load_video(video_name, hps.levels)
     #print(t.shape, f)
     lap_video_list=laplacian_video(t,levels=hps.levels)
@@ -178,5 +182,6 @@ def magnify_motion(video_name):
     save_video(final, saved_name)
 
 if __name__=="__main__":
+
     for fn in hps.mode:
-        locals()[fn]("test_videos/trial_lie_038.mp4")
+        locals()[fn]("/home/srk/NTU/PyEVM/misc/test_videos/trial_lie_038.mp4", hps)
